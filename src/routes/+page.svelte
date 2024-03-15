@@ -1,0 +1,83 @@
+<script lang="ts">
+  import { lndGetWalletBalance, lndGetInfo, lndListChannels, lndListInvoices, lndCreateInvoice } from "$lib/lnd";
+  import { createEventDispatcher } from "svelte";
+  const dispatch = createEventDispatcher();
+
+  let amount = 0;
+  let memo = "";
+  let invoice = null;
+
+  const createInvoice = async () => {
+    invoice = await lndCreateInvoice(amount, memo);
+    dispatch("invoiceCreated", invoice);
+  };
+
+</script>
+
+<h1>Welcome to your Voltage Application</h1>
+<p>
+  Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the sveltekit
+  documentation
+</p>
+
+<h2>Node Balance</h2>
+{#await lndGetWalletBalance()}
+  <p>loading...</p>
+{:then result}
+  <ul>
+    <li>Total Balance: {result.total_balance}</li>
+    <li>Confirmed Balance: {result.confirmed_balance}</li>
+    <li>Unconfirmed Balance: {result.unconfirmed_balance}</li>
+  </ul>
+{:catch error}
+  <p>error: {error.message}</p>
+{/await}
+
+<h2>Node Info</h2>
+{#await lndGetInfo()}
+  <p>loading...</p>
+{:then result}
+  <ul>
+    <li>Node Alias: {result.alias}</li>
+    <li>Pubkey: {result.identity_pubkey}</li>
+    <li>Peers: {result.num_peers}</li>
+    <li>Synced to Chain: {result.synced_to_chain}</li>
+  </ul>
+{:catch error}
+  <p>error: {error.message}</p>
+{/await}
+
+<h2>Channel Info</h2>
+{#await lndListChannels()}
+  <p>loading...</p>
+{:then result}
+  <ul>
+    <li>Number of channels: {result.channels.length}</li>
+  </ul>
+{:catch error}
+  <p>error: {error.message}</p>
+{/await}
+
+<h2>Invoices</h2>
+{#await lndListInvoices()}
+  <p>leading...</p>
+{:then result}
+  <ul>
+    <!-- catch a dispatched created invoice -->
+
+    {#each result.invoices as invoice}
+      <li>{invoice.add_index} - {invoice.state} {invoice.payment_request}</li>
+    {/each}
+  </ul>
+{/await}
+
+<h2>Create Invoice</h2>
+<!-- Make a simple form to call the lndCreateInvoices function with the amount and memo -->
+<form on:submit|preventDefault={createInvoice}>
+  <label for="amount">Amount</label>
+  <input type="number" id="amount" bind:value={amount} />
+  <label for="memo">Memo</label>
+  <input type="text" id="memo" bind:value={memo} />
+  <button type="submit">Create Invoice</button>
+</form>
+
